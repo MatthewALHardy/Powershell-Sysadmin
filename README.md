@@ -1,2 +1,2 @@
 # Powershell-Sysadmin
-Hand Powershell Scripts I use for Sysadmin Tasks
+Handy Powershell Scripts I use for Sysadmin Tasks
