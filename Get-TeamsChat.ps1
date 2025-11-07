@@ -9,19 +9,43 @@ param (
     [Parameter(Mandatory=$true)]
     [datetime]$EndTime
 )
-# Connect to Microsoft Teams
 
-Import-Module MicrosoftTeams
+# Install-Module -Name Microsoft.Graph -Force -AllowClobber -ErrorAction SilentlyContinue
+# Connect to Microsoft Graph
+Import-Module Microsoft.Graph.Teams
+
 # Note: Ensure you have the necessary permissions and are authenticated to access Teams data
-$teamsSession = Connect-MicrosoftTeams
+# Required scopes: Chat.Read, Chat.ReadWrite
+Connect-MgGraph -Scopes "Chat.Read", "Chat.ReadWrite"
+
 # Fetch chat messages for the specified ChatId
-$allMessages = Get-TeamChatMessage -ChatId $ChatId -ErrorAction Stop
-# Filter messages based on the provided time range
-$filteredMessages = $allMessages | Where-Object {
-    ($_.CreatedDateTime -ge $StartTime) -and ($_.CreatedDateTime -le $EndTime)
+try {
+    #TODO: look at filetering at API level to reduce data transfer
+    $allMessages = Get-MgChatMessage -ChatId $ChatId -All -ErrorAction Stop
+    
+    # Filter messages based on the provided time range
+    $filteredMessages = $allMessages | Where-Object {
+
+        ([datetime]$_.CreatedDateTime -ge $StartTime) -and ([datetime]$_.CreatedDateTime -le $EndTime)
+    }
+    
+    # Output the filtered messages with proper formatting
+    $filteredMessages | Select-Object @{
+        Name = "CreatedDateTime"
+        Expression = { [datetime]$_.CreatedDateTime }
+    }, @{
+        Name = "From"
+        Expression = { $_.From.User.DisplayName }
+    }, @{
+        Name = "Body"
+        Expression = { $_.Body.Content }
+    } | Sort-Object CreatedDateTime | Format-Table -AutoSize
+    
+} catch {
+    Write-Error "Failed to retrieve chat messages: $($_.Exception.Message)"
+    Write-Host "Make sure you have the correct ChatId and necessary permissions."
 }
-# Output the filtered messages
-$filteredMessages | Select-Object CreatedDateTime, From, Body
-# Disconnect from Microsoft Teams
-Disconnect-MicrosoftTeams -Confirm:$false
+
+# Disconnect from Microsoft Graph
+Disconnect-MgGraph
 
