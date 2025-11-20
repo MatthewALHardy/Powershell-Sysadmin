@@ -30,7 +30,7 @@ try {
     }
     
     # Output the filtered messages with proper formatting
-    $filteredMessages | Select-Object @{
+    $messagedetails = $filteredMessages | Select-Object @{
         Name = "CreatedDateTime"
         Expression = { [datetime]$_.CreatedDateTime }
     }, @{
@@ -39,8 +39,12 @@ try {
     }, @{
         Name = "Body"
         Expression = { $_.Body.Content }
-    } | Sort-Object CreatedDateTime | Format-Table -AutoSize
-    
+    } | Sort-Object CreatedDateTime
+
+    Foreach ($message in $messagedetails) {
+        Write-Output "<p style='font-size: smaller; font-weight: bold'> [$($message.CreatedDateTime.ToString('HH:mm'))] $($message.From):</p><p>$($message.Body)</p>"
+    }
+
 } catch {
     Write-Error "Failed to retrieve chat messages: $($_.Exception.Message)"
     Write-Host "Make sure you have the correct ChatId and necessary permissions."
